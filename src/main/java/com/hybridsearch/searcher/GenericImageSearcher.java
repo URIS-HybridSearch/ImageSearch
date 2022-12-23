@@ -99,9 +99,31 @@ public class GenericImageSearcher {
 
     class DocumentConsumer implements Runnable{
 
+        private boolean consumerFinished = false;
+        private String threadName = "";
+        public DocumentConsumer(String threadName){
+            this.threadName = threadName;
+        }
         @Override
         public void run() {
+            Document tmpDocment;
+            int tmpId;
+            DocumentModel tempDocumentModel;
+            double tmpDistance;
+            double tmpMaxDistance;
 
+            while(!consumerFinished){
+                try{
+                    tempDocumentModel = linkedBlockingQueue.take();
+                    tmpDocment = tempDocumentModel.getDocument();
+                    tmpId = tempDocumentModel.getId();
+
+                    if(tmpId >= 0){
+                        long start = System.currentTimeMillis();
+                        tmpDistance =
+                    }
+                }
+            }
         }
     }
 
@@ -119,5 +141,9 @@ public class GenericImageSearcher {
         public void run() {
 
         }
+    }
+
+    protected double getDistance(Document document, LireFeature lireFeature){
+
     }
 }
