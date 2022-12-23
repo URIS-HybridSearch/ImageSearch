@@ -8,8 +8,10 @@ import net.semanticmetadata.lire.builders.DocumentBuilder;
 import net.semanticmetadata.lire.imageanalysis.features.LireFeature;
 import net.semanticmetadata.lire.indexers.parallel.ExtractorItem;
 import net.semanticmetadata.lire.searchers.SimpleResult;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -51,4 +53,71 @@ public class GenericImageSearcher {
     protected int numThreadsQueue = DocumentBuilder.NUM_OF_THREADS;
     protected int numThreadProducer = 16;
     protected int producerFlag = 0;
+
+
+    class DocumentProducer implements Runnable{
+
+        String threadName;
+        IndexReader reader = null;
+        int startIndex = 0;
+        int endIndex = 0;
+
+        private DocumentProducer(IndexReader reader){
+            this.reader = reader;
+        }
+
+        private DocumentProducer(int id, IndexReader reader, int startIndex, int endIndex){
+            this.threadName = "producer-" + id;
+            this.reader = reader;
+            this.startIndex = startIndex;
+            this.endIndex = endIndex;
+        }
+
+        @Override
+        public void run() {
+            if(reader == null){
+                return;
+            }
+
+            for(int i = startIndex; i<endIndex; i++){
+                try{
+                    linkedBlockingQueue.add(new DocumentModel(i, reader.document(i)));
+                }catch (IOException ex){
+                    ex.printStackTrace();
+                }
+            }
+
+            producerFlag++;
+            if(producerFlag == numThreadProducer){
+                for(int i = 1; i<numThreadsQueue*3; i++){
+                    // 为什么这里是-i呀?
+                    linkedBlockingQueue.add(new DocumentModel(-i, new Document()));
+                }
+            }
+        }
+    }
+
+    class DocumentConsumer implements Runnable{
+
+        @Override
+        public void run() {
+
+        }
+    }
+
+    class FeatureCacheProducer implements Runnable{
+
+        @Override
+        public void run() {
+
+        }
+    }
+
+    class FeatureCacheConsumer implements Runnable{
+
+        @Override
+        public void run() {
+
+        }
+    }
 }
