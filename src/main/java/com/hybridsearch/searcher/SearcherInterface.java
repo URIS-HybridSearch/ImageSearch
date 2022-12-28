@@ -16,9 +16,6 @@ public interface SearcherInterface {
 
 
     void findSimilar();
-    void findMultiThreadSimilar();
     TreeSet<SearchResult> getResults();
-    ConcurrentSkipListSet<SearchResult> getMultiThreadResults();
-    double getDistance(Document document, LireFeature lireFeature);
 
 }
