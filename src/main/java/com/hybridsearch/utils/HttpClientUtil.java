@@ -1,6 +1,7 @@
 package com.hybridsearch.utils;
 
 
+import com.google.gson.Gson;
 import com.hybridsearch.model.Face;
 import com.hybridsearch.model.SearchModel;
 import org.apache.http.*;
@@ -42,6 +43,7 @@ public class HttpClientUtil {
 
     private static CloseableHttpClient httpClient = null;
     private final static Object syncLock = new Object();
+    private static Gson gson = new Gson();
     private final static String URI = "http://81.70.159.39:33388/feature";
     private final static String address = "http://81.70.159.39/";
 
@@ -183,5 +185,25 @@ public class HttpClientUtil {
         }
 
         return result;
+    }
+
+    public static String getFeature(List<Face> faces){
+        SearchModel searchModel = new SearchModel();
+        searchModel.api_key = "";
+        searchModel.faces = faces;
+        String json = gson.toJson(searchModel);
+
+        try{
+            String result = post(json);
+
+            // testing code
+            System.out.println(result);
+
+            return result;
+        }catch (Exception ex){
+            System.err.println(ex);
+        }
+
+        return null;
     }
 }

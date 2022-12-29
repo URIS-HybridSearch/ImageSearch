@@ -3,6 +3,7 @@ package com.hybridsearch.searcher;
 import com.hybridsearch.model.SearchResult;
 import net.semanticmetadata.lire.imageanalysis.features.LireFeature;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexReader;
 
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -15,7 +16,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 public interface SearcherInterface {
 
 
-    void findSimilar();
+    void findSimilar(IndexReader reader, LireFeature lireFeature);
     TreeSet<SearchResult> getResults();
 
 }

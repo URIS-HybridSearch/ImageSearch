@@ -16,7 +16,6 @@ import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -186,32 +185,77 @@ public class GenericImageSearcher implements SearcherInterface{
     }
 
     @Override
-    public void findSimilar() {
+    public void findSimilar(IndexReader reader, LireFeature lireFeature){
+
         Bits liveDocs = MultiFields.getLiveDocs(reader);
+        Document doc;
+        double tmpDistance;
         int docs = reader.numDocs();
-        // TODO: NOT yet finished
 
         // we read every doc from the index and compare it with the query
         for(int i = 0; i<docs; i++){
 
+            if(reader.hasDeletions() && !liveDocs.get(i))
+                continue; // if it's deleted, just ignore it
 
+            try{
+                doc = reader.document(i);
+                tmpDistance = getDistance(doc, lireFeature);
 
-            // if the array is not full yet
-            if(this.results.size() < maxHits){
+                assert(tmpDistance >= 0);
 
+                // distance is too low
+                if(tmpDistance < this.threshold)
+                    continue;
+
+                // if the array is not full yet
+                if(this.results.size() < maxHits){
+                    this.results.add(new SearchResult(tmpDistance, doc.getField(DocumentBuilder.FIELD_NAME_IDENTIFIER).stringValue()));
+
+                }else if(tmpDistance > results.last().score){
+                    // if it's nearer to the sample than at least one of the curren set;
+                    // remove the last node and add it as new one
+                    this.results.remove(this.results.last());
+                    this.results.add(new SearchResult(tmpDistance, doc.getField(DocumentBuilder.FIELD_NAME_IDENTIFIER).stringValue()));
+                }
+
+            }catch (IOException ex){
+                System.err.println(ex);
             }
+            
         }
-
     }
+
+
 
     @Override
     public TreeSet<SearchResult> getResults() {
         return null;
     }
 
-//    protected double getDistance(Document document, LireFeature lireFeature){
-//        double result;
-//    }
+
+    /**
+     * which classes use it?
+     * @param document
+     * @param lireFeature
+     * @return
+     */
+    protected double getDistance(Document document, LireFeature lireFeature){
+
+        if(document.getField(fieldName).binaryValue() != null && document.getField(fieldName).binaryValue().length>0){
+            cachedInstance.setByteArrayRepresentation(document.getField(fieldName).binaryValue().bytes);
+            return lireFeature.getDistance(cachedInstance);
+        }else{
+            logger.warning("No feature stored in this document {" + extractorItem.getExtractorClass().getName() + ")");
+        }
+
+        return 0d;
+    }
+    protected double getDistance(double[] featureSearch, double[] featureIndex){
+
+        double result = FaceTool.cosineSimilarity(featureSearch, featureIndex);
+        return result*100;
+    }
 
     public String toString(){
         return "Generic Searcher using" + extractorItem.getExtractorClass().getName();

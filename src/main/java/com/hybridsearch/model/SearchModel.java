@@ -3,7 +3,7 @@ package com.hybridsearch.model;
 import java.util.List;
 
 /**
- * @Author Anthony Z.
+ * @Author Anthony HE
  * @Date 23/12/2022
  * @Description:
  */
