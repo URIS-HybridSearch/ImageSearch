@@ -15,6 +15,8 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeSet;
@@ -28,7 +30,7 @@ import java.util.logging.Logger;
  * @Date 21/12/2022
  * @Description:
  */
-public class GenericImageSearcher implements SearcherInterface{
+public class GenericImageSearcher{
 
     protected Logger logger = Logger.getLogger(getClass().getName());
     protected String fieldName;
@@ -127,9 +129,15 @@ public class GenericImageSearcher implements SearcherInterface{
                         //  use assertion here to detect errors if any
                         assert (tmpDistance >= 0d);
                         if(concurrentSkipListSet.size() < maxHits){
-                            // TODO: THE DETAILS to be added
-                        }else{
-                            // TODO: THE DETAILS to be added
+
+                            concurrentSkipListSet.add(new SimpleResult(tmpDistance, tmpId));
+                            if(tmpDistance > maxDistance) maxDistance = tmpDistance;
+                        }else if(tmpDistance < concurrentSkipListSet.last().getDistance()){
+
+                            // if it's nearer to the sample than at least one of the current set
+                            // remove the last one and add it
+                            concurrentSkipListSet.remove(concurrentSkipListSet.last());
+                            concurrentSkipListSet.add(new SimpleResult(tmpDistance, tmpId));
                         }
                     }else{
                         consumerFinished = true;
@@ -184,8 +192,8 @@ public class GenericImageSearcher implements SearcherInterface{
         }
     }
 
-    @Override
-    public void findSimilar(IndexReader reader, LireFeature lireFeature){
+
+    protected void findSimilar(IndexReader reader, LireFeature lireFeature){
 
         Bits liveDocs = MultiFields.getLiveDocs(reader);
         Document doc;
@@ -227,12 +235,116 @@ public class GenericImageSearcher implements SearcherInterface{
     }
 
 
+    protected double findMultiThreadSimilar(IndexReader reader, LireFeature lireFeature){
+        maxDistance = -1d;
 
-    @Override
-    public TreeSet<SearchResult> getResults() {
-        return null;
+        // clear the result set
+        concurrentSkipListSet.clear();
+        hybridFeature = (HybridFeature) lireFeature;
+
+        // TODO: check if the doc is deleted
+        ArrayList<DocumentConsumer> tasks = new ArrayList<>();
+        ArrayList<Thread> threads = new ArrayList<>();
+
+        int docs = reader.numDocs();
+        int range = docs / numThreadProducer;
+
+        for(int i =0; i<numThreadProducer; i++){
+            if(i == numThreadProducer - 1){
+                Thread threadProducer = new Thread(new DocumentProducer(i, reader, range*i, docs));
+                threadProducer.start();
+            }else{
+                Thread threadProducer = new Thread(new DocumentProducer(i, reader, range*i, range*(i+1)));
+                threadProducer.start();
+            }
+        }
+
+        System.out.println();
+
+        for(int i=0; i<numThreadsQueue; i++){
+            DocumentConsumer consumer = new DocumentConsumer("consumer-" + i);
+            Thread threadConsumer = new Thread(consumer);
+            threadConsumer.start();
+
+            tasks.add(consumer);
+            threads.add(threadConsumer);
+        }
+
+        for(Thread t: threads){
+            try{
+                t.join();
+            }catch (InterruptedException ex){
+                ex.printStackTrace();
+            }
+        }
+
+        return maxDistance;
     }
 
+
+    public void searchLocalDocument(double[] feature, IndexReader reader){
+
+        HybridFeature hybridFeature1 = new HybridFeature();
+        hybridFeature1.setHistogram(feature);
+        findSimilar(reader, hybridFeature1);
+    }
+
+    public void searchFeatureCache(double[] feature, String date){
+        LinkedHashMap<String, byte[]> dayFeatures = GenericImageSearcher.features.get(date);
+        searchByDay(feature, dayFeatures);
+
+        // add searchByDayMultiThread method if needed
+    }
+
+    public void searchByDay(double[] feature, LinkedHashMap<String, byte[]> dayFeatures){
+        double tmpDistance;
+
+        for(String key:dayFeatures.keySet()){
+            tmpDistance = getDistance(feature, byte2doubleArray(dayFeatures.get(key)));
+            assert(tmpDistance >= 0);
+
+            if(tmpDistance < threshold){
+                continue;
+            }
+
+            // if the array is not full
+            if(results.size() < this.maxHits){
+                results.add(new SearchResult(tmpDistance, key));
+            }else if(tmpDistance > results.last().score){
+                // if it's nearer to the sample than at least one of the current set
+                // remove the last one and add it
+                results.remove(results.last());
+                results.add(new SearchResult(tmpDistance, key));
+            }
+
+        }
+    }
+    public TreeSet<SearchResult> getResults() {
+        return this.results;
+    }
+
+    public ConcurrentSkipListSet<SearchResult> getMultiThreadResults(){
+        return this.searchResults;
+    }
+
+
+    protected double[] byte2doubleArray(byte[] bytes){
+        double[] histogram = new double[256];
+        int times = Double.SIZE / Byte.SIZE;
+        double[] doubles = new double[bytes.length / times];
+
+        if(doubles.length != histogram.length){
+            return null;
+        }
+
+        for(int i=0; i<doubles.length; i++){
+            doubles[i] = ByteBuffer.wrap(bytes, i*times, times).getDouble();
+            histogram[i] = doubles[i];
+        }
+
+        return histogram;
+
+    }
 
     /**
      * which classes use it?

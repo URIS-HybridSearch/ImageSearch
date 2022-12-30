@@ -28,6 +28,14 @@ dependencies {
     // https://mvnrepository.com/artifact/org.apache.httpcomponents/httpclient
     implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5'
 
+    // https://mvnrepository.com/artifact/org.apache.kafka/kafka
+    implementation group: 'org.apache.kafka', name: 'kafka_2.10', version: '0.8.0'
+
+    // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
+    implementation 'org.slf4j:slf4j-api:1.7.32'
+
+    // https://mvnrepository.com/artifact/org.slf4j/slf4j-simple
+    implementation 'org.slf4j:slf4j-simple:1.7.32'
 
     // junit
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
