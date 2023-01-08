@@ -1,6 +1,8 @@
 package com.hybridsearch.kafka;
 
 
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+
 /**
  * @Author Anthony HE, anthony.zj.he@outlook.com
  * @Date 30/12/2022
@@ -8,10 +10,15 @@ package com.hybridsearch.kafka;
  */
 public class kafkaConsumer implements Runnable{
 
-//    private ConsumerConnector consumerConnector;
 
+    private KafkaConsumer<String, String> consumer;
     private String topic;
     private int numThreads;
+
+
+    public kafkaConsumer(String topic, int numThreads, String zookeeper, String groupID){
+//        this.consumer = new KafkaConsumer();
+    }
     @Override
     public void run() {
 

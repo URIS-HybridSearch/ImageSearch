@@ -10,3 +10,5 @@ Receiving the 512-dimensional feature vector transmitted via Kafka, the index is
 [Project Report](https://docs.google.com/document/d/1A7X1nOxFA1Z7oyIo6d8qj6mjkP3opPVPofhxiyJP0z0)
 
 Visual Features Indexing [Study Report](https://docs.google.com/document/d/1-w42al2NkekTYwWb4qmxp14kym00KHQVClZNcKqw6lI)
+
+Microservice [Study Report](https://docs.google.com/document/d/1rRWZQLRQcpjV-8sTjMacbJkjphF6A_YCzYtNtwwqkoA/edit#heading=h.goxd7kpxzjw3)
